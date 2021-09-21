@@ -12,6 +12,7 @@ import threading
 import json
 
 
+
 def DicToCsv(theDic,needDeleteLastFile):
     pass
 
@@ -32,7 +33,10 @@ def runaaa(code):
 
 Lock = threading.Lock()
 
-
+def ReadUrlConfig():
+    with open("id.txt", "r") as f:
+        data = f.readline()
+        return data
 def GetColorIDforEachVersion(arrVersionColorID,aVersionID,strID):
     option = GetChromeBowserOption()
 
@@ -54,6 +58,9 @@ def GetColorIDforEachVersion(arrVersionColorID,aVersionID,strID):
     # Step2Index=Step2Index+1
     # Lock.release()
     # print("Step2完成"+Step2Index+"/"+Step2Count)
+
+
+
 
 import requests
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -80,8 +87,11 @@ if __name__ == '__main__':
     option=GetChromeBowserOption()
     browser = webdriver.Chrome(executable_path=".\chromedriver.exe", options=option)  # 调用浏览器时，一定要加上设置
 
+    strConfigID=ReadUrlConfig()
+    if strConfigID=="":
+        sys.exit()
+    browser.get(url = "https://item.jd.com/" + strConfigID + ".html")#100010233372'
 
-    browser.get(url = "https://item.jd.com/" + "100010233372" + ".html")
     arrVersionElement=browser.find_element_by_xpath('//*[@id="choose-attr-2"]/div[@class="dd"]').find_elements_by_xpath('div[@data-sku]')
     arrVersionID=[]
     for verEle in arrVersionElement:
