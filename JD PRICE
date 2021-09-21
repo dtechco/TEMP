@@ -1,0 +1,167 @@
+# -*- coding:utf8 -*-
+"""
+@version: 1.0
+@author:
+@file: main
+"""
+from selenium import webdriver
+import csv
+import time
+import threading
+
+import json
+
+
+def DicToCsv(theDic,needDeleteLastFile):
+    pass
+
+def ArrToCsv(theDic, needDeleteLastFile):
+    pass
+
+
+def runaaa(code):
+    browser = webdriver.Chrome(".\chromedriver.exe")
+    url = "https://item.jd.com/" + code + ".html"
+    browser.get(url)
+    dd = browser.find_elements_by_xpath('//*[@id="choose-attr-1"]/div[@class="dd"]/div')
+    dd[2].click
+    # for line in dd:
+    #     print(line.get_attribute("data-sku"))
+    # print("end")
+    browser.quit()
+
+Lock = threading.Lock()
+
+
+def GetColorIDforEachVersion(arrVersionColorID,aVersionID,strID):
+    option = GetChromeBowserOption()
+
+    browser = webdriver.Chrome(executable_path=".\chromedriver.exe", options=option)  # 调用浏览器时，一定要加上设置
+
+    # browser.set_page_load_timeout(10)
+    # browser.set_script_timeout(10)  # 这两种设置都进行才有效
+
+    url = "https://item.jd.com/" + strID + ".html"
+    browser.get(url)
+
+    dd = browser.find_element_by_xpath('//*[@id="choose-attr-1"]/div[@class="dd"]').find_elements_by_xpath('div[@data-sku]')
+    for colorEle in dd:
+        Lock.acquire()
+        arrVersionColorID.append([aVersionID,colorEle.get_attribute("data-value"), colorEle.get_attribute("data-sku"),""])
+        Lock.release()
+    browser.quit()
+    # Lock.acquire()
+    # Step2Index=Step2Index+1
+    # Lock.release()
+    # print("Step2完成"+Step2Index+"/"+Step2Count)
+
+import requests
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+
+def GetChromeBowserOption():
+    # get直接返回，不再等待界面加载完成
+    option = webdriver.ChromeOptions()
+    option.add_experimental_option("excludeSwitches", ['enable-automation', 'enable-logging'])#实现了规避监测，禁止打印日志
+    prefs = {"profile.managed_default_content_settings.images": 2}  # 设置无图模式
+    option.add_experimental_option("prefs", prefs)  # 加载无图模式设置
+    option.add_argument("--headless")  # 设置无头模式
+    option.add_argument('log - level = 3')
+
+    return option
+
+if __name__ == '__main__':
+    # global Step2Index
+    # global Step2Count
+    # 1.
+    # 通过一个url获取所有套餐对应的id，得到taocanIdDic（套餐名，id）
+    print("！如果等待时间过长，关闭重来")
+    print("开始分析页面...")
+
+    option=GetChromeBowserOption()
+    browser = webdriver.Chrome(executable_path=".\chromedriver.exe", options=option)  # 调用浏览器时，一定要加上设置
+
+
+    browser.get(url = "https://item.jd.com/" + "100010233372" + ".html")
+    arrVersionElement=browser.find_element_by_xpath('//*[@id="choose-attr-2"]/div[@class="dd"]').find_elements_by_xpath('div[@data-sku]')
+    arrVersionID=[]
+    for verEle in arrVersionElement:
+        arrVersionID.append([verEle.get_attribute("data-value"),verEle.get_attribute("data-sku")])
+    # print(arrVersionID)
+    browser.quit()
+    # 2.
+    # 遍历arrVersionID，多线程，访问driver，获得每个组合的id，得到新Dic（key = 套餐名 - 颜色，value = id)）
+    arrVersionColorID = []
+    getColorIDforEachVersion_thread_list = []
+    # Step2Count=len(arrVersionID)
+    for aVersionID in arrVersionID:
+        strVersion=aVersionID[0]
+        strID=aVersionID[1]
+        t=threading.Thread(target=GetColorIDforEachVersion,args=(arrVersionColorID,strVersion,strID))
+        getColorIDforEachVersion_thread_list.append(t)
+    for t in getColorIDforEachVersion_thread_list:
+        t.start()
+    for t in getColorIDforEachVersion_thread_list:
+        t.join()
+    #print(arrVersionColorID)
+    # i=0
+    print("开始获取主要信息...")
+    for vci in arrVersionColorID:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'}
+        url = "https://p.3.cn/prices/mgets?pin=null&skuIds=J_" + vci[2]
+        r = requests.get(url, headers=headers).content
+        dicPrice=json.loads(r)[0]
+        if dicPrice["p"]!="":
+            vci[3]=dicPrice["p"]
+
+        # print("完成Step3进度"+i/len(arrVersionColorID))
+    print("准备写入文件..." )
+    #id变文本
+    m = len(arrVersionColorID)
+
+    csvFile2 = open(time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())+".csv", 'w', newline='')
+    writer = csv.writer(csvFile2)
+    m = len(arrVersionColorID)
+    for i in range(m):
+        writer.writerow(arrVersionColorID[i])
+    csvFile2.close()
+
+    print("完成!")
+
+
+
+
+
+
+
+
+
+
+
+
+    # 3.
+    # 通过每个组合的id组成url，多线程访问
+    # 4.
+    # 最终获得新Dic，写入价格
+
+    browser.quit
+
+
+
+
+def aa():
+    #########百度输入框的定位方式##########
+    codeArr=["100010233372","100006730752","100009505584"]
+    thread_list = []
+    for i in range(1):
+        print(i)
+    #通过xpath方式定位
+    for code in codeArr:
+        t=threading.Thread(target=runaaa,args=(code,))
+        thread_list.append(t)
+    for t in thread_list:
+        t.start()
+    for t in thread_list:
+        t.join()
+    ############################################
+
